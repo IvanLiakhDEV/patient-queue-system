@@ -1,18 +1,25 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
 
 export const ROLES = ['patient', 'doctor', 'admin'] as const;
 export type Role = (typeof ROLES)[number];
 
 export interface IUser {
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
     email: string;
     password: string;
     role: Role;
+    refreshToken: string | null;
 }
 
-const userSchema = new Schema<IUser>(
+export interface IUserMethods {
+    comparePassword(password: string): Promise<boolean>;
+}
+
+type UserModel = Model<IUser, {}, IUserMethods>;
+
+const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     {
         firstName: {
             type: String,
@@ -47,9 +54,11 @@ const userSchema = new Schema<IUser>(
         },
         password: { type: String, required: true, select: false },
         role: { type: String, enum: ROLES, default: 'patient', required: true },
+        refreshToken: { type: String, default: null, select: false },
     },
     { timestamps: true },
 );
+
 userSchema.set('toJSON', {
     versionKey: false,
     transform: (_doc, ret) => {
@@ -63,6 +72,10 @@ userSchema.pre('save', async function () {
     this.password = await bcrypt.hash(this.password, 10);
 });
 
-const User = mongoose.model('User', userSchema);
+userSchema.methods.comparePassword = function (password: string): Promise<boolean> {
+    return bcrypt.compare(password, this.password);
+};
+
+const User = mongoose.model<IUser, UserModel>('User', userSchema);
 
 export default User;
