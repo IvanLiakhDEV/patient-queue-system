@@ -15,5 +15,10 @@ export const validateRequest =
             });
             return;
         }
+        if (source === 'body') {
+            req.body = result.data; 
+        } else {
+            res.locals[source] = result.data;
+        }
         next();
     };
