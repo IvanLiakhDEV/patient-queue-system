@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+import bcrypt from 'bcrypt';
 
 export const ROLES = ['patient', 'doctor', 'admin'] as const;
 export type Role = (typeof ROLES)[number];
@@ -49,6 +50,18 @@ const userSchema = new Schema<IUser>(
     },
     { timestamps: true },
 );
+userSchema.set('toJSON', {
+    versionKey: false,
+    transform: (_doc, ret) => {
+        const { password, ...safe } = ret;
+        return safe;
+    },
+});
+
+userSchema.pre('save', async function () {
+    if (!this.isModified('password')) return;
+    this.password = await bcrypt.hash(this.password, 10);
+});
 
 const User = mongoose.model('User', userSchema);
 
