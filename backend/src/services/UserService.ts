@@ -21,7 +21,7 @@ export const loginUser = async (data: LoginBody) => {
     const accessToken = getAccessToken(user._id);
     const refreshToken = getRefreshToken(user._id);
 
-    User.findByIdAndUpdate(user._id, { refreshToken });
+    await User.findByIdAndUpdate(user._id, { refreshToken });
 
     return { user, accessToken, refreshToken };
 };
